@@ -145,8 +145,8 @@ bool NeuralNetwork::contribute(double y, double p) {
 
 
     for(int id : inputNodeIds){
-	for(auto& [neighbor, conn] : adjacencyList[id]){
-	double incomingContribution = contribute(neighbor, y, p);
+	for(auto& [dest, conn] : adjacencyList[id]){
+	double incomingContribution = contribute(dest, y, p);
 	double dummy = 0.0;
 	visitContributeNeighbor(conn, incomingContribution, dummy);
 	}
@@ -178,15 +178,11 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         // Output node: use BCE derivative
         outgoingContribution = -1.0 * ((y - p) / (p * (1 - p)));
     } else {
-        for (int src = 0; src < adjacencyList.size(); ++src) {
-            auto it = adjacencyList[src].find(nodeId);
-            if (it != adjacencyList[src].end()) {
-                Connection& conn = it->second;
-                double incoming = contribute(src, y, p);
-                visitContributeNeighbor(conn, incoming, outgoingContribution);
-            }
-        }
-    }
+        for (auto& [destId, conn] : adjacencyList[nodeId]){
+		double incoming = contribute(destId, y, p);
+		visitContributeNeighbor(conn, incoming, outgoingContribution);
+	}
+     }
 
     visitContributeNode(nodeId, outgoingContribution);
     contributions[nodeId] = outgoingContribution;
