@@ -66,7 +66,6 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
     // 1. Set up your queue initialization
     // 2. Start visiting nodes using the queue
     queue<int> q;
-    unordered_set<int> visited;
     unordered_map<int, int> inDegree;
     for (int v = 0; v < (int)adjacencyList.size(); ++v) {
         for (const auto& [u, conn] : adjacencyList[v]) {
@@ -83,7 +82,6 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
             exit(1);
         }
         node->preActivationValue = input[i];
-        visited.insert(id);
         q.push(id);
     }
 
@@ -92,11 +90,10 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
         int vId = q.front(); q.pop();
         visitPredictNode(vId);
 
-        for (const auto& [u, conn] : adjacencyList[vId]) {
+        for (auto& [u, conn] : adjacencyList[vId]) {
             visitPredictNeighbor(conn);
             inDegree[u]--;
-            if (inDegree[u] == 0 && visited.count(u) == 0) {
-                visited.insert(u);
+            if (inDegree[u]) {
                 q.push(u);
             }
         }
@@ -125,18 +122,21 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
 // STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::contribute(double y, double p) {
 
-    contributions.clear();
+    
 
     // find each incoming contribution, and contribute to the input layer's outgoing weights
     // If the node is already found, use its precomputed contribution from the contributions map
     // There is no need to visitContributeNode for the input layer since there is no bias to update.
 
 
-    flush();
-
-    for(int id : outputNodeIds){
-	contribute(id, y, p);
+    for(int id : inputNodeIds){
+	for(auto& [neighbor, conn] : adjacencyList[id]){
+	double incomingContribution = contribute(neighbor, y, p);
+	double dummy = 0.0;
+	visitContributeNeighbor(conn, incomingContribution, dummy);
+	}
     }
+    flush();
 
     return true;
 }
@@ -197,9 +197,9 @@ bool NeuralNetwork::update() {
     // weight update: weight = weight - (learningRate * delta)
     // reset the delta term for each node and connection to zero.
     
-    if (batchSize == 0) return false; // prevent divide by zero
+    // prevent divide by zero
 
-    double scale = learningRate / batchSize;
+    double scale = learningRate;
 
     // Update all node biases and reset delta
     for (NodeInfo* node : nodes) {
@@ -216,8 +216,6 @@ bool NeuralNetwork::update() {
             conn.delta = 0.0; // Reset delta
         }
     }
-
-    batchSize = 0; // Reset batch size
     return true;
     
 }
@@ -374,7 +372,7 @@ void NeuralNetwork::visitPredictNode(int vId) {
     v->activate();
 }
 
-void NeuralNetwork::visitPredictNeighbor(Connection c) {
+void NeuralNetwork::visitPredictNeighbor(Connection& c) {
     NodeInfo* v = nodes.at(c.source);
     NodeInfo* u = nodes.at(c.dest);
     double w = c.weight;

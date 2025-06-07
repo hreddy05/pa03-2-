@@ -68,7 +68,7 @@ class NeuralNetwork : public Graph {
         // visits the node during evaluation
         void visitPredictNode(int vId);
         // visits v's neighbor during evaluation
-        void visitPredictNeighbor(Connection c);
+        void visitPredictNeighbor(Connection& c);
         // visits the node during contribution
         void visitContributeNode(int vId, double& outgoingContribution);
         // visits the connection during contribution
