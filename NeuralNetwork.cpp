@@ -66,6 +66,7 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
     // 1. Set up your queue initialization
     // 2. Start visiting nodes using the queue
     queue<int> q;
+    unordered_set<int> visited;
     unordered_map<int, int> inDegree;
     for (int v = 0; v < (int)adjacencyList.size(); ++v) {
         for (const auto& [u, conn] : adjacencyList[v]) {
@@ -82,6 +83,7 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
             exit(1);
         }
         node->preActivationValue = input[i];
+        visited.insert(id);
         q.push(id);
     }
 
@@ -93,7 +95,8 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
         for (auto& [u, conn] : adjacencyList[vId]) {
             visitPredictNeighbor(conn);
             inDegree[u]--;
-            if (inDegree[u]) {
+            if (inDegree[u] == 0 && visited.count(u) == 0) {
+                visited.insert(u);
                 q.push(u);
             }
         }
@@ -118,6 +121,18 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
     }
 
     return output;
+
+    // error checking : size mismatch
+   
+
+    // BFT implementation goes here
+
+    // 1. Set up your queue initialization
+    // 2. Start visiting nodes using the queue
+    
+
+   
+    
 }
 // STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::contribute(double y, double p) {
@@ -202,9 +217,9 @@ bool NeuralNetwork::update() {
     double scale = learningRate;
 
     // Update all node biases and reset delta
-    for (NodeInfo* node : nodes) {
+    for (NodeInfo*  node : nodes) {
         if (node != nullptr) {
-            node->bias -= scale * node->delta;
+	    node->bias -= scale * node->delta;
             node->delta = 0.0; // Reset delta
         }
     }
